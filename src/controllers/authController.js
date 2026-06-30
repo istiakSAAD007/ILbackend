@@ -6,6 +6,7 @@ import { ENV } from "../utils/env.js";
 // register user
 export const register = async (req, res) => {
   const { email, password, firstName, lastName, location, role } = req.body;
+
   try {
     if (!email || !password || !firstName || !lastName || !location) {
       return res.status(400).json({ error: "Missing fields." });
@@ -14,6 +15,7 @@ export const register = async (req, res) => {
     const assignedRole = role === "RECRUITER" ? "RECRUITER" : "CANDIDATE";
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
+
     if (existingUser) {
       return res.status(400).json({ error: "Email is already registered." });
     }
@@ -26,6 +28,8 @@ export const register = async (req, res) => {
         data: {
           email,
           password: passwordHash,
+          firstName,
+          lastName,
           role: assignedRole,
         },
       });
@@ -33,8 +37,6 @@ export const register = async (req, res) => {
       await tx.profile.create({
         data: {
           userId: user.id,
-          firstName,
-          lastName,
           location,
         },
       });
@@ -45,17 +47,25 @@ export const register = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: "Account registered successfully.",
-      user: { id: newUser.id, email: newUser.email, role: newUser.role },
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        role: newUser.role,
+      },
     });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    console.error("Registration Error:", error);
+    return res.status(500).json({ error: "Internal server error." });
   }
 };
 
 // login user
 export const login = async (req, res) => {
-  const { email, password } = req.body;
   try {
+    const { email, password } = req.body;
+
     if (!email || !password) {
       return res
         .status(400)
@@ -65,7 +75,9 @@ export const login = async (req, res) => {
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user || user.isBlocked) {
-      return res.status(401).json({ error: "User not found!" });
+      return res
+        .status(401)
+        .json({ error: "Account not found!." });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -74,15 +86,10 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials." });
     }
 
-    const token = jwt.sign(
-      { userId: user.id, role: user.role },
-      ENV.JWT_SECRET,
-      {
-        expiresIn: "1d",
-      },
-    );
+    const token = jwt.sign({ userId: user.id, role: user.role }, ENV.JWT_SECRET, {
+      expiresIn: "1d",
+    });
 
-    // set token inside http-only cookie
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -91,11 +98,20 @@ export const login = async (req, res) => {
     });
 
     return res.status(200).json({
+      success: true,
       message: "Login successful.",
-      user: { id: user.id, email: user.email, role: user.role },
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        role: user.role,
+      },
     });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    console.error("Login Error:", error);
+    return res
+      .status(500)
+      .json({ error: "Internal server error during login." });
   }
 };
 
