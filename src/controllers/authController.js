@@ -75,9 +75,7 @@ export const login = async (req, res) => {
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user || user.isBlocked) {
-      return res
-        .status(401)
-        .json({ error: "Account not found!." });
+      return res.status(401).json({ error: "Account not found!." });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -86,9 +84,13 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials." });
     }
 
-    const token = jwt.sign({ userId: user.id, role: user.role }, ENV.JWT_SECRET, {
-      expiresIn: "1d",
-    });
+    const token = jwt.sign(
+      { userId: user.id, role: user.role },
+      ENV.JWT_SECRET,
+      {
+        expiresIn: "1d",
+      },
+    );
 
     res.cookie("token", token, {
       httpOnly: true,
@@ -119,4 +121,28 @@ export const login = async (req, res) => {
 export const logout = (req, res) => {
   res.clearCookie("token");
   return res.status(200).json({ message: "Logged out successfully." });
+};
+
+export const getUser = async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      include: {
+        profile: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    const { password, ...userInfo } = user;
+
+    return res.status(200).json({ success: true, user: userInfo });
+  } catch (error) {
+    console.error("get user error:", error);
+    return res
+      .status(500)
+      .json({ error: "Internal server error fetching profile." });
+  }
 };
