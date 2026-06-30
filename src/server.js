@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/authRoutes.js";
+import attributeRoutes from "./routes/attributeRoutes.js";
 import { ENV } from "./utils/env.js";
 
 const app = express();
@@ -12,6 +13,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
+app.use("/api/attributes", attributeRoutes);
 
 app.get("/", (req, res) => {
   res

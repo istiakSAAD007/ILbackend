@@ -123,6 +123,8 @@ export const logout = (req, res) => {
   return res.status(200).json({ message: "Logged out successfully." });
 };
 
+
+// get user info
 export const getUser = async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
