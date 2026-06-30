@@ -3,10 +3,6 @@ import jwt from "jsonwebtoken";
 import prisma from "../configs/prisma.js";
 import { ENV } from "../utils/env.js";
 
-const tokenGen = (id, role) => {
-  return jwt.sign({ id, role }, ENV.JWT_SECRET, { expiresIn: "3d" });
-};
-
 // register user
 export const register = async (req, res) => {
   const { email, password, firstName, lastName, location, role } = req.body;
