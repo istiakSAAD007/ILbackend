@@ -1,0 +1,175 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  RECRUITER
+  CANDIDATE
+}
+
+enum AttributeType {
+  STRING
+  TEXT
+  IMAGE
+  NUMERIC
+  DATE
+  PERIOD
+  BOOLEAN
+  DROPDOWN
+}
+
+enum Operator {
+  GT
+  GTE
+  LT
+  LTE
+  EQ
+  CONTAINS
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  role      Role     @default(CANDIDATE)
+  isBlocked Boolean  @default(false)
+  version   Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profile     Profile?
+  likes       Like[]
+  discussions Discussion[]
+}
+
+model Profile {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  firstName String
+  lastName  String
+  location  String
+  photoUrl  String?
+  version   Int     @default(1)
+
+  attributeValues ProfileAttributeValue[]
+  projects        Project[]
+  cvs             CV[]
+}
+
+model Attribute {
+  id        String        @id @default(uuid())
+  category  String
+  name      String        @unique
+  type      AttributeType
+  options   String[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  profileValues        ProfileAttributeValue[]
+  positionRequirements PositionRequirement[]
+}
+
+model ProfileAttributeValue {
+  id          String    @id @default(uuid())
+  profileId   String
+  profile     Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  attributeId String
+  attribute   Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  textValue String?
+  numValue  Float?
+  boolValue Boolean?
+  dateValue DateTime?
+  dateStart DateTime?
+  dateEnd   DateTime?
+  version   Int       @default(1)
+
+  @@unique([profileId, attributeId])
+}
+
+model Position {
+  id          String   @id @default(uuid())
+  title       String
+  description String   @db.Text
+  maxProjects Int      @default(3)
+  projectTags String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  version     Int      @default(1)
+
+  requirements PositionRequirement[]
+  cvs          CV[]
+  discussions  Discussion[]
+}
+
+model PositionRequirement {
+  id          String    @id @default(uuid())
+  positionId  String
+  position    Position  @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  attributeId String
+  attribute   Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  operator Operator
+  value    String
+}
+
+model Project {
+  id          String    @id @default(uuid())
+  profileId   String
+  profile     Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name        String
+  startDate   DateTime
+  endDate     DateTime?
+  description String    @db.Text
+  tags        String[]
+}
+
+model CV {
+  id         String   @id @default(uuid())
+  profileId  String
+  profile    Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  positionId String
+  position   Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  isHidden   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  likes      Like[]
+
+  @@unique([profileId, positionId])
+}
+
+model Like {
+  id          String @id @default(uuid())
+  cvId        String
+  cv          CV     @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  recruiterId String
+  recruiter   User   @relation(fields: [recruiterId], references: [id], onDelete: Cascade)
+
+  @@unique([cvId, recruiterId])
+}
+
+model Discussion {
+  id         String   @id @default(uuid())
+  positionId String
+  position   Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content    String   @db.Text
+  createdAt  DateTime @default(now())
+}
