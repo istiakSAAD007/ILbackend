@@ -1,4 +1,4 @@
-import prisma from "../config/prisma.js";
+import prisma from "../configs/prisma.js";
 
 const evaluateRequirement = (requirement, profileValue) => {
   if (!profileValue) return false;
