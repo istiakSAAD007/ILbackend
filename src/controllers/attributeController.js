@@ -1,4 +1,4 @@
-import prisma from "../configs/prisma";
+import prisma from "../configs/prisma.js";
 
 // create attribute
 export const createAttribute = async (req, res) => {

@@ -4,7 +4,7 @@ import {
   getAllAttributes,
   createAttribute,
   updateAttribute,
-  deleteAttribute,
+  deleteAttribute
 } from "../controllers/attributeController.js";
 
 import { authorizeRoles, verifyToken } from "../middlewares/authMiddleware.js";
